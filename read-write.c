@@ -24,22 +24,11 @@ void read_database(void)
   printf("Je lis en db\n");
 }
 
-void prepare_data(void)
-{
-  printf("Je prepare la data\n");
-}
-
-void process_data(void)
-{
-  printf("Je process la data\n");
-}
-
 void *writer()
 {
   int count = 0;
   while (count<NWRITE)
   {
-    prepare_data();
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
     writecount++;
@@ -59,7 +48,7 @@ void *writer()
     writecount--;
     if(writecount==0) {
       // départ du premier writer
-      sem_post(&wsem);
+      sem_post(&rsem);
     }
     pthread_mutex_unlock(&mutex_writecount);
     count++;
@@ -82,8 +71,10 @@ void *reader()
       sem_wait(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
+    
     sem_post(&rsem);
     read_database();
+    
     pthread_mutex_lock(&mutex_readcount);
     // section critique
     readcount--;
@@ -92,7 +83,6 @@ void *reader()
       sem_post(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
-    process_data();
     count++;
   }
 
