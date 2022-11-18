@@ -33,7 +33,7 @@ void process_data(void)
   printf("Je process la data\n");
 }
 
-void writer(void)
+void *writer()
 {
   int count = 0;
   while (count<NWRITE)
@@ -63,9 +63,11 @@ void writer(void)
     pthread_mutex_unlock(&mutex_writecount);
     count++;
   }
+  
+  return EXIT_SUCCESS;
 }
 
-void reader(void)
+void *reader()
 {
   int count=0;
   while (count<NREAD)
@@ -92,6 +94,8 @@ void reader(void)
     process_data();
     count++;
   }
+
+  return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
