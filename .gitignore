@@ -51,5 +51,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-philosophes prod-conso read-write
+philosophes
+prod-conso 
+read-write
 *.csv
