@@ -1,7 +1,7 @@
 CC=gcc
 CCFLAGS= -std=c11 -pedantic -Wvla -Wall -Wno-unused-variable -pthread 
 
-all: philosophes prod-conso
+all: philosophes prod-conso read-write
 
 philosophes : philosophes.o 
 	$(CC) $(CCFLAGS) -o philosophes philosophes.o 
@@ -22,5 +22,4 @@ read-write.o: read-write.c
 	$(CC) $(CCFLAGS) -c read-write.c
 
 clean : 
-	rm -f $(all)
-	clear
+	rm -f philosophes prod-conso read-write *.o
