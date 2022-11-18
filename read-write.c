@@ -9,9 +9,10 @@
 
 pthread_mutex_t mutex_writecount;
 pthread_mutex_t mutex_readcount;
-sem_t db;          // accès à la db
+sem_t wsem;
+sem_t rsem;
 int readcount = 0; // nombre de readers
-int writecount = 0; // nombre de readers
+int writecount = 0; // nombre de writers
 
 void write_database(void)
 {
@@ -23,47 +24,36 @@ void read_database(void)
   printf("Je lis en db\n");
 }
 
-void prepare_data(void)
-{
-  printf("Je prepare la data\n");
-}
-
-void process_data(void)
-{
-  printf("Je process la data\n");
-}
-
 void *writer()
 {
   int count = 0;
   while (count<NWRITE)
   {
-    prepare_data();
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
     writecount++;
     if(writecount==1) {
       // premier writer arrive
-      sem_wait(&db);
+      sem_wait(&rsem);
     }
     pthread_mutex_unlock(&mutex_writecount);
 
-    sem_wait(&db);
+    sem_wait(&wsem);
     // section critique, un seul writer à la fois
     write_database();
-    sem_post(&db);
+    sem_post(&wsem);
 
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
     writecount--;
     if(writecount==0) {
       // départ du premier writer
-      sem_post(&db);
+      sem_post(&rsem);
     }
     pthread_mutex_unlock(&mutex_writecount);
     count++;
   }
-  
+
   return EXIT_SUCCESS;
 }
 
@@ -72,26 +62,27 @@ void *reader()
   int count=0;
   while (count<NREAD)
   {
-    sem_wait(&db);
+    sem_wait(&rsem);
     pthread_mutex_lock(&mutex_readcount);
     // section critique
     readcount++;
     if (readcount == 1)
     { // arrivée du premier reader
-      sem_wait(&db);
+      sem_wait(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
-    sem_post(&db);
+    
+    sem_post(&rsem);
     read_database();
+    
     pthread_mutex_lock(&mutex_readcount);
     // section critique
     readcount--;
     if (readcount == 0)
     { // départ du dernier reader
-      sem_post(&db);
+      sem_post(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
-    process_data();
     count++;
   }
 
@@ -118,7 +109,8 @@ int main(int argc, char **argv)
     }
   }
 
-  sem_init(&db, 0, 1);
+  sem_init(&wsem, 0, 1);
+  sem_init(&rsem, 0, 1);
 
   pthread_t threadsReader[nbthreadsReader];
   pthread_t threadsWriter[nbthreadsWriter];
