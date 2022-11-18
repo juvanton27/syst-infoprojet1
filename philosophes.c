@@ -54,9 +54,6 @@ int main(int argc, char ** argv) {
       fprintf(stderr, "Usage: %s [-j threads] [-n philosophes]\n", argv[0]);
     }
   }
-  printf("%i\n",nthreads);
-  printf("%i\n",philosophes);
-
   pthread_t phil[philosophes];
   pthread_mutex_t baguette[philosophes];
 
@@ -68,6 +65,4 @@ int main(int argc, char ** argv) {
     pthread_join(phil[i], NULL);
   
   return 0;
-
-  
 }
