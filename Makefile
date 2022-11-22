@@ -22,4 +22,4 @@ read-write.o: read-write.c
 	$(CC) $(CCFLAGS) -c read-write.c
 
 clean : 
-	rm -f philosophes prod-conso read-write *.o
+	rm -f philosophes prod-conso read-write *.o *.csv

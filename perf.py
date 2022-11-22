@@ -1,7 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('measure.csv', index_col=0)
+filename = input("Enter filename : ")
+
+df = pd.read_csv(f'{filename}.csv', index_col=0)
 mean = df.mean(axis=1)
 std = df.std(axis=1)
 
@@ -11,6 +13,6 @@ plt.plot(std, label='std', color='red')
 plt.legend(title='legend')
 plt.ylabel('Temps (en secondes)')
 plt.xlabel('Nombre de threads')
-plt.title('Test de performance de "read-write.c"')
+plt.title(f'Test de performance de "{filename}.c"')
 
 plt.show()
