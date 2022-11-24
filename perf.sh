@@ -1,17 +1,22 @@
 #!/bin/bash
-#arg: file
+#arg: filename => read-write | prod-conso | philosophes
 
 make -s clean
 make -s $1 2> /dev/null
 
-echo "n_threads,time1,time2,time3,time4,time5" > measure.csv
+if [ $1 = "read-write" ]; then
+	file="read-write.csv"
+fi
+
+echo "n_threads,time1,time2,time3,time4,time5" > $file
 
 for i in 1 8 16 32 64; do
-	echo -n "$i" >> measure.csv
-	for _ in {1...5}; do
-		echo "Essai $j avec $i threads"
-		time_val=$(/usr/bin/time -f %e $1 -r $i -w $i > /dev/null | tail -1)
-		echo -n ",$time_val" >> measure.csv
+	echo -n "$i" >> $file
+	for j in 1 2 3 4 5; do
+		if [ $1 = "read-write" ]; then
+			timeval=`/usr/bin/time -f %e ./$1 -r $i -w $i 2>&1`
+		fi
+		echo -n ",$timeval" >> $file
 	done
-	echo "" >> measure.csv
+	echo "" >> $file
 done
