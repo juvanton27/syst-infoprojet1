@@ -1,7 +1,9 @@
 CC=gcc
 CCFLAGS= -std=c11 -pedantic -Wvla -Wall -Wno-unused-variable -pthread 
 
-all: philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim
+files=philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim
+
+all : $(files)
 
 # PHILOSOPHES
 philosophes : philosophes.o 
@@ -44,4 +46,4 @@ read-write-optim.o: read-write.c
 
 # CLEAN
 clean : 
-	rm -f philosophes prod-conso read-write philosophes-optim prod-conso-optim read-write-optim *.o *.csv
+	rm -f $(files) *.o *.csv
