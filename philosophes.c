@@ -24,7 +24,7 @@ void * philosophe(void * arg) {
   int right = (left + 1) % philosophes;
   int i = 0;
   while (i < CYCLES) {
-    // philosophe pense
+    
     if (left < right) {
       pthread_mutex_lock( & baguette[left]);
       pthread_mutex_lock( & baguette[right]);
