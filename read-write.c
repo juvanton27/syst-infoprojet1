@@ -14,16 +14,6 @@ sem_t rsem;
 int readcount = 0; // nombre de readers
 int writecount = 0; // nombre de writers
 
-void write_database(void)
-{
-  // printf("J'écris en db\n");
-}
-
-void read_database(void)
-{
-  // printf("Je lis en db\n");
-}
-
 void *writer()
 {
   int count = 0;
