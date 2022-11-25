@@ -41,6 +41,7 @@ void *writer()
     sem_wait(&wsem);
     // section critique, un seul writer à la fois
     write_database();
+    count++;
     sem_post(&wsem);
 
     pthread_mutex_lock(&mutex_writecount);
@@ -51,7 +52,6 @@ void *writer()
       sem_post(&rsem);
     }
     pthread_mutex_unlock(&mutex_writecount);
-    count++;
   }
 
   return EXIT_SUCCESS;
@@ -74,6 +74,7 @@ void *reader()
     
     sem_post(&rsem);
     read_database();
+    count++;
     
     pthread_mutex_lock(&mutex_readcount);
     // section critique
@@ -83,7 +84,6 @@ void *reader()
       sem_post(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
-    count++;
   }
 
   return EXIT_SUCCESS;
