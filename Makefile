@@ -21,7 +21,7 @@ prod-conso : prod-conso.o
 	$(CC) $(CCFLAGS) -o prod-conso prod-conso.o 
 
 prod-conso-optim : prod-conso-optim.o
-	$(CC) $(CCFLAGS) -o prod-conso-optim prod-conso.o
+	$(CC) $(CCFLAGS) -o prod-conso-optim prod-conso-optim.o
 
 prod-conso.o: prod-conso.c 
 	$(CC) -DOPTIM=0 $(CCFLAGS) -c prod-conso.c
@@ -34,7 +34,7 @@ read-write : read-write.o
 	$(CC) $(CCFLAGS) -o read-write read-write.o 
 
 read-write-optim : read-write-optim.o
-	$(CC) $(CCFLAGS) -o read-write-optim read-write.o
+	$(CC) $(CCFLAGS) -o read-write-optim read-write-optim.o
 
 read-write.o: read-write.c 
 	$(CC) -DOPTIM=0 $(CCFLAGS) -c read-write.c
