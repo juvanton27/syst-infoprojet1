@@ -54,4 +54,8 @@ dkms.conf
 philosophes
 prod-conso 
 read-write
+
 *.csv
+read-write
+prod-conso
+philosophes
