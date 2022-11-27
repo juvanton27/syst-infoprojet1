@@ -7,12 +7,8 @@
 #define NREAD 2560
 #define NWRITE 640
 
-pthread_mutex_t mutex_writecount;
-pthread_mutex_t mutex_readcount;
 sem_t wsem;
 sem_t rsem;
-int readcount = 0; // nombre de readers
-int writecount = 0; // nombre de writers
 
 void write_database(void)
 {
@@ -23,6 +19,13 @@ void read_database(void)
 {
   // printf("Je lis en db\n");
 }
+
+#if OPTIM==0
+
+pthread_mutex_t mutex_writecount;
+pthread_mutex_t mutex_readcount;
+int readcount = 0; // nombre de readers
+int writecount = 0; // nombre de writers
 
 void *writer()
 {
@@ -88,6 +91,53 @@ void *reader()
 
   return EXIT_SUCCESS;
 }
+
+#else
+
+int lock = 0;
+
+int test_and_set(int *target)
+{
+  int rv = *target;
+  *target = 1;
+  return rv;
+}
+
+void *writer()
+{
+  int count = 0;
+  while (count<NWRITE)
+  {
+    while(test_and_set(&lock));
+    
+    // critical section
+    write_database();
+    count++;
+
+    lock = 0;
+  }
+
+  return EXIT_SUCCESS;
+}
+
+void *reader()
+{
+  int count=0;
+  while (count<NREAD)
+  {
+    while(test_and_set(&lock));
+    
+    // critical section
+    read_database();
+    count++;
+
+    lock = 0;
+  }
+
+  return EXIT_SUCCESS;
+}
+
+#endif
 
 int main(int argc, char **argv)
 {

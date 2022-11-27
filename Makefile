@@ -47,3 +47,4 @@ read-write-optim.o: read-write.c
 # CLEAN
 clean : 
 	rm -f $(files) *.o *.csv
+	clear
