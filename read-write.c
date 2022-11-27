@@ -94,13 +94,22 @@ void *reader()
 
 #else
 
-int lock = 0;
+int verrou;
 
-int test_and_set(int *target)
+int lock(int *target)
 {
+  // int rv;
+  // __asm__("mov %0, %1; mov $1, %0"
+  //   : "=r" (*target)
+  //   : "r" (rv));
   int rv = *target;
   *target = 1;
   return rv;
+}
+
+void unlock()
+{
+  verrou = 0;
 }
 
 void *writer()
@@ -108,13 +117,13 @@ void *writer()
   int count = 0;
   while (count<NWRITE)
   {
-    while(test_and_set(&lock));
+    while(lock(&verrou));
     
     // critical section
     write_database();
     count++;
 
-    lock = 0;
+    unlock();
   }
 
   return EXIT_SUCCESS;
@@ -125,13 +134,13 @@ void *reader()
   int count=0;
   while (count<NREAD)
   {
-    while(test_and_set(&lock));
+    while(lock(&verrou));
     
     // critical section
     read_database();
     count++;
 
-    lock = 0;
+    unlock();
   }
 
   return EXIT_SUCCESS;
