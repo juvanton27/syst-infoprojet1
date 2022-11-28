@@ -18,16 +18,6 @@ int *buffer;
 int pos = 0; // position to add items in buffer
 int countprod = 0;
 
-void print_array()
-{
-  printf("[");
-  for (int i = 0; i < SIZE; i++)
-  {
-    printf("%i, ", buffer[i]);
-  }
-  printf("]\n");
-}
-
 int produce_item()
 {
   countprod++;
@@ -38,10 +28,8 @@ void insert_item(int item)
 {
   printf("Trying to insert %i => ", item);
   buffer[pos++] = item;
-  print_array();
   // simulate
-  for (int i = 0; i < 10000; i++)
-    ;
+  for (int i = 0; i < 10000; i++);
 }
 
 void remove_item()
@@ -53,10 +41,8 @@ void remove_item()
     buffer[i - 1] = buffer[i];
   }
   pos--;
-  print_array();
   // simulate
-  for (int i = 0; i < 10000; i++)
-    ;
+  for (int i = 0; i < 10000; i++);
 }
 
 void *producer(void *args)
@@ -88,8 +74,7 @@ void *consumer(void *args)
   while (countprod < NPROD)
   {
     // attente d'une place remplie
-    int err = sem_wait(&full);
-    if(err!=0) perror("sem wqit");
+    sem_wait(&full);
     pthread_mutex_lock(&mutex);
 
     // section critique
