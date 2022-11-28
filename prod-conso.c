@@ -1,117 +1,168 @@
 #include <pthread.h>
-
 #include <stdio.h>
-
 #include <stdlib.h>
-
 #include <stdbool.h>
-
 #include <unistd.h>
-
 #include <semaphore.h>
 
 #define SIZE 8
-#define MAX_INT 
-#define MIN_INT 
+#define MAX_INT 128
+#define MIN_INT 1
+#define NPROD 64
 
-int opt, threadsprod, threadsconso;
+pthread_mutex_t mutex;
+sem_t empty;
+sem_t full;
 
-sem_t semEmpty;
-sem_t semFull;
+int *buffer;
+int pos = 0; // position to add items in buffer
+int countprod = 0;
 
-pthread_mutex_t mutexBuffer;
-
-int buffer[SIZE];
-int count = 0;
-
-
-void * producer(void * args) {
-  for (int i=0; i<10000; i++){
-    // Produce
-    int x = 8192;
-    sleep(1);
-
-    // Add to the buffer
-    sem_wait( & semEmpty);
-    pthread_mutex_lock( & mutexBuffer);
-    buffer[count] = x;
-    count++;
-    pthread_mutex_unlock( & mutexBuffer);
-    sem_post( & semFull);
+void print_array()
+{
+  printf("[");
+  for (int i = 0; i < SIZE; i++)
+  {
+    printf("%i, ", buffer[i]);
   }
+  printf("]\n");
 }
 
-void * consumer(void * args) {
-  for (int i=0; i<10000; i++){
-    int y;
-
-    // Remove from the buffer
-    sem_wait( & semFull);
-    pthread_mutex_lock( & mutexBuffer);
-    y = buffer[count - 1];
-    count--;
-    pthread_mutex_unlock( & mutexBuffer);
-    sem_post( & semEmpty);
-
-    // Consume
-    printf("Got %d\n", y);
-    sleep(1);
-  }
+int produce_item()
+{
+  countprod++;
+  return (rand() % (MAX_INT - MIN_INT + 1)) + MIN_INT;
 }
 
-int main(int argc, char ** argv) {
+void insert_item(int item)
+{
+  printf("Trying to insert %i => ", item);
+  buffer[pos++] = item;
+  print_array();
+  // simulate
+  for (int i = 0; i < 10000; i++)
+    ;
+}
 
-  while ((opt = getopt(argc, argv, "p:c:")) != -1) {
-    switch (opt) {
+void remove_item()
+{
+  int item = buffer[0];
+  printf("Trying to remove %i => ", item);
+  for (int i = 1; i <= pos; i++)
+  {
+    buffer[i - 1] = buffer[i];
+  }
+  pos--;
+  print_array();
+  // simulate
+  for (int i = 0; i < 10000; i++)
+    ;
+}
+
+void *producer(void *args)
+{
+  int item;
+  while (countprod < NPROD)
+  {
+    // produce item
+    item = produce_item();
+
+    // attente d'une place libre
+    sem_wait(&empty);
+    pthread_mutex_lock(&mutex);
+
+    // section critique
+    insert_item(item);
+
+    pthread_mutex_unlock(&mutex);
+    // il y a une place remplie en plus
+    sem_post(&full);
+  }
+
+  return EXIT_SUCCESS;
+}
+
+void *consumer(void *args)
+{
+  int item;
+  while (countprod < NPROD)
+  {
+    // attente d'une place remplie
+    int err = sem_wait(&full);
+    if(err!=0) perror("sem wqit");
+    pthread_mutex_lock(&mutex);
+
+    // section critique
+    remove_item();
+
+    pthread_mutex_unlock(&mutex);
+    // il y a une place libre en plus
+    sem_post(&empty);
+  }
+
+  return EXIT_SUCCESS;
+}
+
+int main(int argc, char **argv)
+{
+  int opt;
+  int nthreadsProd;
+  int nthreadsConso;
+
+  while ((opt = getopt(argc, argv, "p:c:")) != -1)
+  {
+    switch (opt)
+    {
     case 'p':
-      threadsprod = atoi(optarg);
+      nthreadsProd = atoi(optarg);
       break;
     case 'c':
-      threadsconso = atoi(optarg);
+      nthreadsConso = atoi(optarg);
       break;
     default:
       fprintf(stderr, "Usage: %s [-p threadsProd] [-c threadsConso]\n", argv[0]);
     }
   }
 
-  pthread_t thProd[threadsprod];
+  pthread_mutex_init(&mutex, NULL);
+  sem_init(&empty, 0, SIZE);
+  sem_init(&full, 0, 0);
 
-  pthread_t thConso[threadsconso];
+  buffer = malloc(SIZE * sizeof(int));
 
-  pthread_mutex_init( & mutexBuffer, NULL);
-  sem_init( & semEmpty, 0, SIZE);
-  sem_init( & semFull, 0, 0);
-  int i;
+  pthread_t threadsProd[nthreadsProd];
+  pthread_t threadsConso[nthreadsConso];
+  int err;
 
-  for (i = 0; i < threadsprod; i++) {
-    if (i > 0) {
-      if (pthread_create( & thProd[i], NULL, & producer, NULL) != 0) {
-        perror("Failed to create thread");
-      }
-    }
+  // Creating threads
+  for (long i = 0; i < nthreadsProd; i++)
+  {
+    err = pthread_create(&threadsProd[i], NULL, &producer, NULL);
+    if (err != 0)
+      perror("Failed to create thread");
   }
-
-  for (i = 0; i < threadsconso; i++) {
-    if (i > 0) {
-      if (pthread_create( & thConso[i], NULL, & consumer, NULL) != 0) {
-        perror("Failed to create thread");
-      }
-    }
+  for (long i = 0; i < nthreadsConso; i++)
+  {
+    err = pthread_create(&threadsConso[i], NULL, &consumer, NULL);
+    if (err != 0)
+      perror("Failed to create thread");
   }
-  for (i = 0; i < threadsprod; i++) {
-    if (pthread_join(thProd[i], NULL) != 0) {
+  // Joining threads
+  for (long i = 0; i < nthreadsProd; i++)
+  {
+    err = pthread_join(threadsProd[i], NULL);
+    if (err != 0)
       perror("Failed to join thread");
-    }
+  }
+  for (long i = 0; i < nthreadsConso; i++)
+  {
+    err = pthread_join(threadsConso[i], NULL);
+    if (err != 0)
+      perror("Failed to join thread");
   }
 
-  for (i = 0; i < threadsconso; i++) {
-    if (pthread_join(thConso[i], NULL) != 0) {
-      perror("Failed to join thread");
-    }
-  }
-  sem_destroy( & semEmpty);
-  sem_destroy( & semFull);
-  pthread_mutex_destroy( & mutexBuffer);
-  return 0;
+  // sem_destroy(&empty);
+  // sem_destroy(&full);
+  // pthread_mutex_destroy(&mutex);
+  return EXIT_SUCCESS;
 }
-
