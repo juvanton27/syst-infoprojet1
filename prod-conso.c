@@ -33,7 +33,6 @@ void insert_item(int item)
 
 void remove_item()
 {
-  int item = buffer[0];
   for (int i = 1; i <= pos; i++)
   {
     buffer[i - 1] = buffer[i];
@@ -68,7 +67,6 @@ void *producer(void *args)
 
 void *consumer(void *args)
 {
-  int item;
   while (countprod < NPROD)
   {
     // attente d'une place remplie
@@ -144,8 +142,8 @@ int main(int argc, char **argv)
       perror("Failed to join thread");
   }
 
-  // sem_destroy(&empty);
-  // sem_destroy(&full);
-  // pthread_mutex_destroy(&mutex);
+  sem_destroy(&empty);
+  sem_destroy(&full);
+  pthread_mutex_destroy(&mutex);
   return EXIT_SUCCESS;
 }
