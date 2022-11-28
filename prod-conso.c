@@ -26,7 +26,6 @@ int produce_item()
 
 void insert_item(int item)
 {
-  printf("Trying to insert %i => ", item);
   buffer[pos++] = item;
   // simulate
   for (int i = 0; i < 10000; i++);
@@ -35,7 +34,6 @@ void insert_item(int item)
 void remove_item()
 {
   int item = buffer[0];
-  printf("Trying to remove %i => ", item);
   for (int i = 1; i <= pos; i++)
   {
     buffer[i - 1] = buffer[i];
