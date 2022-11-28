@@ -9,14 +9,18 @@
 
 sem_t wsem;
 sem_t rsem;
+int rcount = 0; // nombre de read effectués
+int wcount = 0; // nombre de write effectués
 
 void write_database(void)
 {
+  wcount++;
   // printf("J'écris en db\n");
 }
 
 void read_database(void)
 {
+  rcount++;
   // printf("Je lis en db\n");
 }
 
@@ -29,8 +33,7 @@ int writecount = 0; // nombre de writers
 
 void *writer()
 {
-  int count = 0;
-  while (count<NWRITE)
+  while (wcount<NWRITE)
   {
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
@@ -44,7 +47,6 @@ void *writer()
     sem_wait(&wsem);
     // section critique, un seul writer à la fois
     write_database();
-    count++;
     sem_post(&wsem);
 
     pthread_mutex_lock(&mutex_writecount);
@@ -62,8 +64,7 @@ void *writer()
 
 void *reader()
 {
-  int count=0;
-  while (count<NREAD)
+  while (rcount<NREAD)
   {
     sem_wait(&rsem);
     pthread_mutex_lock(&mutex_readcount);
@@ -77,7 +78,6 @@ void *reader()
     
     sem_post(&rsem);
     read_database();
-    count++;
     
     pthread_mutex_lock(&mutex_readcount);
     // section critique
@@ -114,14 +114,12 @@ void unlock()
 
 void *writer()
 {
-  int count = 0;
-  while (count<NWRITE)
+  while (wcount<NWRITE)
   {
     while(lock(&verrou));
     
     // critical section
     write_database();
-    count++;
 
     unlock();
   }
@@ -131,14 +129,12 @@ void *writer()
 
 void *reader()
 {
-  int count=0;
-  while (count<NREAD)
+  while (rcount<NREAD)
   {
     while(lock(&verrou));
     
     // critical section
     read_database();
-    count++;
 
     unlock();
   }
