@@ -8,7 +8,7 @@
 #define SIZE 8
 #define MAX_INT 128
 #define MIN_INT 1
-#define NPROD 64
+#define NPROD 8192
 
 pthread_mutex_t mutex;
 sem_t empty;
