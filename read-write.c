@@ -15,13 +15,13 @@ int wcount = 0; // nombre de write effectués
 void write_database(void)
 {
   wcount++;
-  // printf("J'écris en db\n");
+  for(int i=0; i<10000; i++);
 }
 
 void read_database(void)
 {
   rcount++;
-  // printf("Je lis en db\n");
+  for(int i=0; i<10000; i++);
 }
 
 #if OPTIM==0
