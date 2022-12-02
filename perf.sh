@@ -1,7 +1,6 @@
 #!/bin/bash
 #arg: filename => read-write | prod-conso | philosophes
 
-make -s clean
 make -s $1 2> /dev/null
 
 if [ $1 = "read-write" ]; then
@@ -26,7 +25,7 @@ for i in 1 8 16 32 64; do
 			timeval=`/usr/bin/time -f %e ./$1 -p $i -c $i 2>&1`
 		fi
 		if [ $1 = "philosophes" ]; then
-			timeval=`/usr/bin/time -f %e ./$1 -j $i -n 5 2>&1`
+			timeval=`/usr/bin/time -f %e ./$1 -j $i -n 4 2>&1`
 		fi
 		echo -n ",$timeval" >> $file
 	done

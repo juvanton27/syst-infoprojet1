@@ -96,19 +96,16 @@ void *reader()
 
 int verrou;
 
-int lock(int *target)
+int lock()
 {
-  // int rv;
-  // __asm__("mov %0, %1; mov $1, %0"
-  //   : "=r" (*target)
-  //   : "r" (rv));
-  int rv = *target;
-  *target = 1;
-  return rv;
+  // TODO: transformer en assembleur
+  while(verrou == 1);
+  verrou = 1;
 }
 
 void unlock()
 {
+  // TODO: transformer en assembleur
   verrou = 0;
 }
 
@@ -116,7 +113,7 @@ void *writer()
 {
   while (wcount<NWRITE)
   {
-    while(lock(&verrou));
+    lock();
     
     // critical section
     write_database();
@@ -131,7 +128,7 @@ void *reader()
 {
   while (rcount<NREAD)
   {
-    while(lock(&verrou));
+    lock();
     
     // critical section
     read_database();
