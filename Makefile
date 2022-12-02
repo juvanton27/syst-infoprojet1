@@ -1,5 +1,5 @@
 CC=gcc
-CCFLAGS= -std=c11 -pedantic -Wvla -Wall -Wno-unused-variable -pthread 
+CCFLAGS= -std=gnu99 -pedantic -Wvla -Wall -Wno-unused-variable -pthread
 
 files=philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim
 

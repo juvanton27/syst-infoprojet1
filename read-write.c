@@ -95,6 +95,10 @@ void *reader()
 #else
 
 int verrou;
+asm ("movl $0, %%eax;\n"
+  :"=r"(verrou)
+  : 
+  :"%%eax"); // put verrou in register eax
 
 int lock()
 {
