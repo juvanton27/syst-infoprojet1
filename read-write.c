@@ -94,23 +94,26 @@ void *reader()
 
 #else
 
-int verrou;
-asm ("movl $0, %%eax;\n"
-  :"=r"(verrou)
-  : 
-  :"%%eax"); // put verrou in register eax
+int verrou = 0;
+int registre = 1;
 
 int lock()
 {
   // TODO: transformer en assembleur
   while(verrou == 1);
-  verrou = 1;
+  asm("xchgl %0, %1"
+    : "=r"(registre)
+    :"r"(verrou)
+    :);
 }
 
 void unlock()
 {
   // TODO: transformer en assembleur
-  verrou = 0;
+  asm("xchgl %0, %1"
+    : "=r"(verrou)
+    :"r"(registre)
+    :);
 }
 
 void *writer()
