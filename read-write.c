@@ -30,14 +30,29 @@ void read_database(void)
 }
 
 /**
- * @brief PARTIE 1
+ * @brief Partie 1 + Partie 2.4
  */
-#if OPTIM == 0
+#if OPTIM == 0 || OPTIM == 3
 
   pthread_mutex_t mutex_writecount;
   pthread_mutex_t mutex_readcount;
   int readcount = 0;  // nombre de readers
   int writecount = 0; // nombre de writers
+
+  int readsize = 1;
+  int writesize = 1;
+
+  void my_wait(int *sem)
+  {
+    while(*sem <= 0);
+    asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
+  }
+
+  void my_post(int *sem)
+  {
+    while(*sem >= 1);
+    asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
+  }
 
   void *writer()
   {
@@ -49,14 +64,26 @@ void read_database(void)
       if (writecount == 1)
       {
         // premier writer arrive
-        sem_wait(&rsem);
+        #if OPTIM == 3
+          my_wait(&readsize);
+        #else
+          sem_wait(&rsem);
+        #endif
       }
       pthread_mutex_unlock(&mutex_writecount);
 
-      sem_wait(&wsem);
+      #if OPTIM == 3
+        my_wait(&writesize);
+      #else
+        sem_wait(&wsem);
+      #endif
       // section critique, un seul writer à la fois
       write_database();
-      sem_post(&wsem);
+      #if OPTIM == 3
+        my_post(&writesize);
+      #else
+        sem_post(&wsem);
+      #endif
 
       pthread_mutex_lock(&mutex_writecount);
       // section critique - writecount
@@ -64,7 +91,11 @@ void read_database(void)
       if (writecount == 0)
       {
         // départ du premier writer
-        sem_post(&rsem);
+        #if OPTIM == 3
+          my_post(&readsize);
+        #else
+          sem_post(&rsem);
+        #endif
       }
       pthread_mutex_unlock(&mutex_writecount);
     }
@@ -76,17 +107,29 @@ void read_database(void)
   {
     while (rcount < NREAD)
     {
-      sem_wait(&rsem);
+      #if OPTIM == 3
+        my_wait(&readsize);
+      #else
+        sem_wait(&rsem);
+      #endif
       pthread_mutex_lock(&mutex_readcount);
       // section critique
       readcount++;
       if (readcount == 1)
       { // arrivée du premier reader
-        sem_wait(&wsem);
+        #if OPTIM == 3
+          my_wait(&writesize);
+        #else
+          sem_wait(&wsem);
+        #endif
       }
       pthread_mutex_unlock(&mutex_readcount);
 
-      sem_post(&rsem);
+      #if OPTIM == 3
+        my_post(&readsize);
+      #else
+        sem_post(&rsem);
+      #endif
       read_database();
 
       pthread_mutex_lock(&mutex_readcount);
@@ -94,7 +137,11 @@ void read_database(void)
       readcount--;
       if (readcount == 0)
       { // départ du dernier reader
-        sem_post(&wsem);
+        #if OPTIM == 3
+          my_post(&writesize);
+        #else
+          sem_post(&wsem);
+        #endif
       }
       pthread_mutex_unlock(&mutex_readcount);
     }

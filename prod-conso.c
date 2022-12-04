@@ -19,10 +19,6 @@ pthread_mutex_t mutex;
 sem_t empty;
 sem_t full;
 
-
-int fullsize = 0;
-int emptysize = SIZE;
-
 int *buffer;
 int pos = 0; // position to add items in buffer
 int countprod = 0;
@@ -52,9 +48,25 @@ void remove_item()
 }
 
 /**
- * @brief Partie 1
+ * @brief Partie 1 + Partie 2.4
  */
-#if OPTIM == 0
+#if OPTIM == 0 || OPTIM == 3
+
+  int fullsize = 0;
+  int emptysize = SIZE;
+
+  void my_wait(int *sem)
+  {
+    while(*sem <= 0);
+    asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
+  }
+
+  void my_post(int *sem)
+  {
+    while(*sem >= SIZE-1);
+    asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
+  }
+
   void *producer(void *args)
   {
     int item;
@@ -64,7 +76,11 @@ void remove_item()
       item = produce_item();
 
       // attente d'une place libre
-      sem_wait(&empty);
+      #if OPTIM == 3
+        my_wait(&emptysize);
+      #else
+        sem_wait(&empty);
+      #endif
       pthread_mutex_lock(&mutex);
 
       // section critique
@@ -72,7 +88,11 @@ void remove_item()
 
       pthread_mutex_unlock(&mutex);
       // il y a une place remplie en plus
-      sem_post(&full);
+      #if OPTIM == 3
+        my_post(&fullsize);
+      #else
+        sem_post(&full);
+      #endif
     }
 
     return EXIT_SUCCESS;
@@ -83,7 +103,11 @@ void remove_item()
     while (countprod < NPROD)
     {
       // attente d'une place remplie
-      sem_wait(&full);
+      #if OPTIM == 3
+        my_wait(&fullsize);
+      #else 
+        sem_wait(&full);
+      #endif
       pthread_mutex_lock(&mutex);
 
       // section critique
@@ -91,7 +115,11 @@ void remove_item()
 
       pthread_mutex_unlock(&mutex);
       // il y a une place libre en plus
-      sem_post(&empty);
+      #if OPTIM == 3
+        my_post(&emptysize);
+      #else
+        sem_post(&empty);
+      #endif
     }
 
     return EXIT_SUCCESS;
@@ -101,7 +129,6 @@ void remove_item()
  * @brief Partie 2
  */
 #else
-
   int verrou = 0;
 
   // Test and set
@@ -153,19 +180,6 @@ void remove_item()
     }
   #endif
 
-
-  void my_wait(int *sem)
-  {
-    while(*sem <= 0);
-    asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
-  }
-
-  void my_post(int *sem)
-  {
-    while(*sem >= SIZE-1);
-    asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
-  }
-
   void *producer(void *args)
   {
     int item;
@@ -175,11 +189,7 @@ void remove_item()
       item = produce_item();
 
       // attente d'une place libre
-      #if OPTIM == 3
-        my_wait(&emptysize);
-      #else
-        sem_wait(&empty);
-      #endif
+      sem_wait(&empty);
       lock();
 
       // section critique
@@ -187,11 +197,7 @@ void remove_item()
 
       unlock();
       // il y a une place remplie en plus
-      #if OPTIM == 3
-        my_post(&fullsize);
-      #else
-        sem_post(&full);
-      #endif
+      sem_post(&full);
     }
 
     return EXIT_SUCCESS;
@@ -202,11 +208,7 @@ void remove_item()
     while (countprod < NPROD)
     {
       // attente d'une place remplie
-      #if OPTIM == 3
-        my_wait(&fullsize);
-      #else 
-        sem_wait(&full);
-      #endif
+      sem_wait(&full);
       lock();
 
       // section critique
@@ -214,11 +216,7 @@ void remove_item()
 
       unlock();
       // il y a une place libre en plus
-      #if OPTIM == 3
-        my_post(&emptysize);
-      #else
-        sem_post(&empty);
-      #endif
+      sem_post(&empty);
     }
 
     return EXIT_SUCCESS;
