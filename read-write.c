@@ -17,6 +17,11 @@ sem_t rsem;
 int rcount = 0; // nombre de read effectués
 int wcount = 0; // nombre de write effectués
 
+pthread_mutex_t mutex_writecount;
+pthread_mutex_t mutex_readcount;
+int readcount = 0;  // nombre de readers
+int writecount = 0; // nombre de writers
+
 /**
  * @brief Fakes a write in database
  * 
@@ -41,11 +46,6 @@ void read_database(void)
  * @brief Partie 1 + Partie 2.4
  */
 #if OPTIM == 0 || OPTIM == 3
-
-  pthread_mutex_t mutex_writecount;
-  pthread_mutex_t mutex_readcount;
-  int readcount = 0;  // nombre de readers
-  int writecount = 0; // nombre de writers
 
   int readsize = 1;
   int writesize = 1;
