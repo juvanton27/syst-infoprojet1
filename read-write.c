@@ -4,8 +4,13 @@
 #include <unistd.h>
 #include <semaphore.h>
 
+#if DOPTIM == 0
 #define NREAD 2560
 #define NWRITE 640
+#else
+#define NREAD 6400
+#define NWRITE 6400
+#endif
 
 sem_t wsem;
 sem_t rsem;
@@ -26,6 +31,7 @@ void read_database(void)
     ;
 }
 
+// Code avec sémaphore
 #if OPTIM == 0
 
 pthread_mutex_t mutex_writecount;
@@ -96,6 +102,61 @@ void *reader()
   return EXIT_SUCCESS;
 }
 
+// Code avec test-and-set
+#elif DOPTIM == 1
+
+int verrou = 0;
+
+int lock()
+{
+  while (verrou == 1);
+  asm("movl $1, %%eax;"
+      "xchgl %%eax, %0;"
+      :"=r"(verrou)
+      :
+      :"%eax");
+}
+
+void unlock()
+{
+  asm("movl $0, %%eax;"
+      "xchgl %%eax, %0;"
+      :"=r"(verrou)
+      :
+      :"%eax");
+}
+
+void *writer()
+{
+  while (wcount < NWRITE)
+  {
+    lock();
+
+    // critical section
+    write_database();
+
+    unlock();
+  }
+
+  return EXIT_SUCCESS;
+}
+
+void *reader()
+{
+  while (rcount < NREAD)
+  {
+    lock();
+
+    // critical section
+    read_database();
+
+    unlock();
+  }
+
+  return EXIT_SUCCESS;
+}
+
+// Code avec test-and-test-and-set
 #else
 
 int verrou = 0;
@@ -103,7 +164,9 @@ int verrou = 0;
 int lock()
 {
   // TODO: transformer en assembleur
-  while (verrou == 1);
+  while (verrou == 1) {
+    while (verrou);
+  }
   asm("movl $1, %%eax;"
       "xchgl %%eax, %0;"
       :"=r"(verrou)

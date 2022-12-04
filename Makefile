@@ -1,7 +1,26 @@
+#####################################
+#
+# Partie 1
+# 1.1 philosophes
+# 1.2 prod-cons
+# 1.3 read-write
+# 1.4 perf.sh
+# 1.5 perf.py
+# 
+# Partie 2
+# 2.1 *-test-and-set
+# 2.2 perf.sh
+# 2.3 *-test-and-test-and-set
+# 2.4 
+#####################################
+
 CC=gcc
 CCFLAGS= -std=gnu99 -pthread
 
-files=philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim perso
+simple=philosophes read-write prod-conso
+test-and-set=philosophes-test-and-set read-write-test-and-set prod-conso-test-and-set
+test-and-test-and-set=philosophes-test-and-test-and-set read-write-test-and-test-and-set prod-conso-test-and-test-and-set
+files=$(simple) $(test-and-set) $(test-and-test-and-set) perso
 
 all : $(files)
 
@@ -12,41 +31,60 @@ philosophes : philosophes.o
 philosophes.o: philosophes.c 
 	$(CC) -DOPTIM=0 $(CCFLAGS) -c philosophes.c 
 
-philosophes-optim : philosophes-optim.o
-	$(CC) $(CCFLAGS) -o philosophes-optim philosophes-optim.o
+philosophes-test-and-set : philosophes-test-and-set.o
+	$(CC) $(CCFLAGS) -o philosophes-test-and-set philosophes-test-and-set.o
 
-philosophes-optim.o: philosophes.c 
-	$(CC) -DOPTIM=1 $(CCFLAGS) -c philosophes.c -o philosophes-optim.o
+philosophes-test-and-set.o: philosophes.c 
+	$(CC) -DOPTIM=1 $(CCFLAGS) -c philosophes.c -o philosophes-test-and-set.o
+
+philosophes-test-and-test-and-set : philosophes-test-and-test-and-set.o
+	$(CC) $(CCFLAGS) -o philosophes-test-and-test-and-set philosophes-test-and-test-and-set.o
+
+philosophes-test-and-test-and-set.o: philosophes.c 
+	$(CC) -DOPTIM=2 $(CCFLAGS) -c philosophes.c -o philosophes-test-and-test-and-set.o
 
 # PROD-CONSO
 prod-conso : prod-conso.o 
 	$(CC) $(CCFLAGS) -o prod-conso prod-conso.o 
 
-prod-conso-optim : prod-conso-optim.o
-	$(CC) $(CCFLAGS) -o prod-conso-optim prod-conso-optim.o
-
 prod-conso.o: prod-conso.c 
 	$(CC) -DOPTIM=0 $(CCFLAGS) -c prod-conso.c
 
-prod-conso-optim.o: prod-conso.c 
-	$(CC) -DOPTIM=1 $(CCFLAGS) -c prod-conso.c -o prod-conso-optim.o
+prod-conso-test-and-set : prod-conso-test-and-set.o
+	$(CC) $(CCFLAGS) -o prod-conso-test-and-set prod-conso-test-and-set.o
+
+prod-conso-test-and-set.o: prod-conso.c 
+	$(CC) -DOPTIM=1 $(CCFLAGS) -c prod-conso.c -o prod-conso-test-and-set.o
+
+prod-conso-test-and-test-and-set : prod-conso-test-and-test-and-set.o
+	$(CC) $(CCFLAGS) -o prod-conso-test-and-test-and-set prod-conso-test-and-test-and-set.o
+
+prod-conso-test-and-test-and-set.o: prod-conso.c 
+	$(CC) -DOPTIM=2 $(CCFLAGS) -c prod-conso.c -o prod-conso-test-and-test-and-set.o
 
 # READ_WRITE
 read-write : read-write.o 
 	$(CC) $(CCFLAGS) -o read-write read-write.o 
 
-read-write-optim : read-write-optim.o
-	$(CC) $(CCFLAGS) -o read-write-optim read-write-optim.o
-
 read-write.o: read-write.c 
 	$(CC) -DOPTIM=0 $(CCFLAGS) -c read-write.c
 
-read-write-optim.o: read-write.c 
-	$(CC) -DOPTIM=1 $(CCFLAGS) -c read-write.c -o read-write-optim.o
+read-write-test-and-set : read-write-test-and-set.o
+	$(CC) $(CCFLAGS) -o read-write-test-and-set read-write-test-and-set.o
 
-# PERSONAL DEV
+read-write-test-and-set.o: read-write.c 
+	$(CC) -DOPTIM=1 $(CCFLAGS) -c read-write.c -o read-write-test-and-set.o
+
+read-write-test-and-test-and-set : read-write-test-and-test-and-set.o
+	$(CC) $(CCFLAGS) -o read-write-test-and-test-and-set read-write-test-and-test-and-set.o
+
+read-write-test-and-test-and-set.o: read-write.c 
+	$(CC) -DOPTIM=2 $(CCFLAGS) -c read-write.c -o read-write-test-and-test-and-set.o
+
+# PERSONAL DEV (DELETE ON SUBMITION)
 perso: 
-	cp * /home/juvanton/Documents
+	cp /mnt/shared/Bac\ 1/Systèmes\ informatiques/Projet/syst-infoprojet1/* /home/juvanton/Documents
+	clear
 
 # CLEAN
 clean : 

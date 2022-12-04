@@ -5,6 +5,10 @@ read-write
 prod-conso
 philosophes
 
-read-write-optim
-prod-conso-optim
-philosophes-optim
+read-write-test-and-set
+prod-conso-test-and-set
+philosophes-test-and-set
+
+read-write-test-and-test-and-set
+prod-conso-test-and-test-and-set
+philosophes-test-and-test-and-set
