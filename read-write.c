@@ -109,24 +109,22 @@ void read_database(void)
 
   int verrou = 0;
 
-  /**
-   * Test and set
-   */
+  // Test and set
   #if DOPTIM == 1
-    int lock()
+    void lock()
     {
       while (verrou == 1);
       asm("movl $1, %%eax;"
           "xchgl %%eax, %0;"
           :"=r"(verrou)
           :
-          :"%eax");
+          :"%eax"
+      );
     }
-  /**
-   * Test and test and set
-   */
+
+  // Test and test and set
   #else
-    int lock()
+    void lock()
     {
       while (verrou == 1)
       {
@@ -136,7 +134,8 @@ void read_database(void)
           "xchgl %%eax, %0;"
           :"=r"(verrou)
           :
-          :"%eax");
+          :"%eax"
+      );
     }
   #endif
 
@@ -146,7 +145,8 @@ void read_database(void)
         "xchgl %%eax, %0;"
         :"=r"(verrou)
         :
-        :"%eax");
+        :"%eax"
+    );
   }
 
   void *writer()

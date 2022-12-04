@@ -4,15 +4,24 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <stdint.h>
 
 #define SIZE 8
 #define MAX_INT 128
 #define MIN_INT 1
-#define NPROD 8192
+#if OPTIM == 0
+  #define NPROD 8192
+#else
+  #define NPROD 6400
+#endif
 
 pthread_mutex_t mutex;
 sem_t empty;
 sem_t full;
+
+
+int fullsize = 0;
+int emptysize = SIZE;
 
 int *buffer;
 int pos = 0; // position to add items in buffer
@@ -42,47 +51,179 @@ void remove_item()
   for (int i = 0; i < 10000; i++);
 }
 
-void *producer(void *args)
-{
-  int item;
-  while (countprod < NPROD)
+/**
+ * @brief Partie 1
+ */
+#if OPTIM == 0
+  void *producer(void *args)
   {
-    // produce item
-    item = produce_item();
+    int item;
+    while (countprod < NPROD)
+    {
+      // produce item
+      item = produce_item();
 
-    // attente d'une place libre
-    sem_wait(&empty);
-    pthread_mutex_lock(&mutex);
+      // attente d'une place libre
+      sem_wait(&empty);
+      pthread_mutex_lock(&mutex);
 
-    // section critique
-    insert_item(item);
+      // section critique
+      insert_item(item);
 
-    pthread_mutex_unlock(&mutex);
-    // il y a une place remplie en plus
-    sem_post(&full);
+      pthread_mutex_unlock(&mutex);
+      // il y a une place remplie en plus
+      sem_post(&full);
+    }
+
+    return EXIT_SUCCESS;
   }
 
-  return EXIT_SUCCESS;
-}
-
-void *consumer(void *args)
-{
-  while (countprod < NPROD)
+  void *consumer(void *args)
   {
-    // attente d'une place remplie
-    sem_wait(&full);
-    pthread_mutex_lock(&mutex);
+    while (countprod < NPROD)
+    {
+      // attente d'une place remplie
+      sem_wait(&full);
+      pthread_mutex_lock(&mutex);
 
-    // section critique
-    remove_item();
+      // section critique
+      remove_item();
 
-    pthread_mutex_unlock(&mutex);
-    // il y a une place libre en plus
-    sem_post(&empty);
+      pthread_mutex_unlock(&mutex);
+      // il y a une place libre en plus
+      sem_post(&empty);
+    }
+
+    return EXIT_SUCCESS;
   }
 
-  return EXIT_SUCCESS;
-}
+/**
+ * @brief Partie 2
+ */
+#else
+
+  int verrou = 0;
+
+  // Test and set
+  #if OPTIM == 1
+    void lock()
+    {
+      while (verrou == 1);
+      asm("movl $1, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax"
+      );
+    }
+
+    void unlock()
+    {
+      asm("movl $0, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax"
+      );
+    }
+  // Test and test and set
+  #else
+    void lock()
+    {
+      while (verrou == 1)
+      {
+        while(verrou);
+      }
+      asm("movl $1, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax"
+      );
+    }
+
+    void unlock()
+    {
+      asm("movl $0, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax"
+      );
+    }
+  #endif
+
+
+  void my_wait(int *sem)
+  {
+    while(*sem <= 0);
+    asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
+  }
+
+  void my_post(int *sem)
+  {
+    while(*sem >= SIZE-1);
+    asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
+  }
+
+  void *producer(void *args)
+  {
+    int item;
+    while (countprod < NPROD)
+    {
+      // produce item
+      item = produce_item();
+
+      // attente d'une place libre
+      #if OPTIM == 3
+        my_wait(&emptysize);
+      #else
+        sem_wait(&empty);
+      #endif
+      lock();
+
+      // section critique
+      insert_item(item);
+
+      unlock();
+      // il y a une place remplie en plus
+      #if OPTIM == 3
+        my_post(&fullsize);
+      #else
+        sem_post(&full);
+      #endif
+    }
+
+    return EXIT_SUCCESS;
+  }
+
+  void *consumer(void *args)
+  {
+    while (countprod < NPROD)
+    {
+      // attente d'une place remplie
+      #if OPTIM == 3
+        my_wait(&fullsize);
+      #else 
+        sem_wait(&full);
+      #endif
+      lock();
+
+      // section critique
+      remove_item();
+
+      unlock();
+      // il y a une place libre en plus
+      #if OPTIM == 3
+        my_post(&emptysize);
+      #else
+        sem_post(&empty);
+      #endif
+    }
+
+    return EXIT_SUCCESS;
+  }
+#endif
 
 int main(int argc, char **argv)
 {

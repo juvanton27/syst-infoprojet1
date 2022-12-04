@@ -12,3 +12,7 @@ philosophes-test-and-set
 read-write-test-and-test-and-set
 prod-conso-test-and-test-and-set
 philosophes-test-and-test-and-set
+
+read-write-sem
+prod-conso-sem
+philosophes-sem
