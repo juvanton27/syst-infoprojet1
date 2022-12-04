@@ -1,7 +1,7 @@
 CC=gcc
 CCFLAGS= -std=gnu99 -pthread
 
-files=philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim
+files=philosophes philosophes-optim prod-conso prod-conso-optim read-write read-write-optim perso
 
 all : $(files)
 
@@ -43,6 +43,10 @@ read-write.o: read-write.c
 
 read-write-optim.o: read-write.c 
 	$(CC) -DOPTIM=1 $(CCFLAGS) -c read-write.c -o read-write-optim.o
+
+# PERSONAL DEV
+perso: 
+	cp * /home/juvanton/Documents
 
 # CLEAN
 clean : 

@@ -15,30 +15,33 @@ int wcount = 0; // nombre de write effectués
 void write_database(void)
 {
   wcount++;
-  for(int i=0; i<10000; i++);
+  for (int i = 0; i < 10000; i++)
+    ;
 }
 
 void read_database(void)
 {
   rcount++;
-  for(int i=0; i<10000; i++);
+  for (int i = 0; i < 10000; i++)
+    ;
 }
 
-#if OPTIM==0
+#if OPTIM == 0
 
 pthread_mutex_t mutex_writecount;
 pthread_mutex_t mutex_readcount;
-int readcount = 0; // nombre de readers
+int readcount = 0;  // nombre de readers
 int writecount = 0; // nombre de writers
 
 void *writer()
 {
-  while (wcount<NWRITE)
+  while (wcount < NWRITE)
   {
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
     writecount++;
-    if(writecount==1) {
+    if (writecount == 1)
+    {
       // premier writer arrive
       sem_wait(&rsem);
     }
@@ -52,7 +55,8 @@ void *writer()
     pthread_mutex_lock(&mutex_writecount);
     // section critique - writecount
     writecount--;
-    if(writecount==0) {
+    if (writecount == 0)
+    {
       // départ du premier writer
       sem_post(&rsem);
     }
@@ -64,7 +68,7 @@ void *writer()
 
 void *reader()
 {
-  while (rcount<NREAD)
+  while (rcount < NREAD)
   {
     sem_wait(&rsem);
     pthread_mutex_lock(&mutex_readcount);
@@ -75,10 +79,10 @@ void *reader()
       sem_wait(&wsem);
     }
     pthread_mutex_unlock(&mutex_readcount);
-    
+
     sem_post(&rsem);
     read_database();
-    
+
     pthread_mutex_lock(&mutex_readcount);
     // section critique
     readcount--;
@@ -95,33 +99,34 @@ void *reader()
 #else
 
 int verrou = 0;
-int registre = 1;
 
 int lock()
 {
   // TODO: transformer en assembleur
-  while(verrou == 1);
-  asm("xchgl %0, %1"
-    : "=r"(registre)
-    :"r"(verrou)
-    :);
+  while (verrou == 1);
+  asm("movl $1, %%eax;"
+      "xchgl %%eax, %0;"
+      :"=r"(verrou)
+      :
+      :"%eax");
 }
 
 void unlock()
 {
   // TODO: transformer en assembleur
-  asm("xchgl %0, %1"
-    : "=r"(verrou)
-    :"r"(registre)
-    :);
+  asm("movl $0, %%eax;"
+      "xchgl %%eax, %0;"
+      :"=r"(verrou)
+      :
+      :"%eax");
 }
 
 void *writer()
 {
-  while (wcount<NWRITE)
+  while (wcount < NWRITE)
   {
     lock();
-    
+
     // critical section
     write_database();
 
@@ -133,10 +138,10 @@ void *writer()
 
 void *reader()
 {
-  while (rcount<NREAD)
+  while (rcount < NREAD)
   {
     lock();
-    
+
     // critical section
     read_database();
 
