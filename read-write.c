@@ -17,12 +17,20 @@ sem_t rsem;
 int rcount = 0; // nombre de read effectués
 int wcount = 0; // nombre de write effectués
 
+/**
+ * @brief Fakes a write in database
+ * 
+ */
 void write_database(void)
 {
   wcount++;
   for (int i = 0; i < 10000; i++);
 }
 
+/**
+ * @brief Fakes a read in database
+ * 
+ */
 void read_database(void)
 {
   rcount++;
@@ -42,18 +50,34 @@ void read_database(void)
   int readsize = 1;
   int writesize = 1;
 
+  /**
+   * @brief My implementation of the sem_wait
+   * 
+   * @param sem a pointer to a sem int
+   */
   void my_wait(int *sem)
   {
     while(*sem <= 0);
     asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
   }
 
+  /**
+   * @brief My implementation of the sem_post
+   * 
+   * @param sem a pointer to a sem int
+   */
   void my_post(int *sem)
   {
     while(*sem >= 1);
     asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
   }
 
+  /**
+   * @brief Write in database
+   * Act as Task 1.3 if launched with ./read-write
+   * Act as Task 2.4 if launched with ./read-write-sem
+   * @return void* 
+   */
   void *writer()
   {
     while (wcount < NWRITE)
@@ -103,6 +127,12 @@ void read_database(void)
     return EXIT_SUCCESS;
   }
 
+  /**
+   * @brief Read in database
+   * Act as Task 1.3 if launched with ./read-write
+   * Act as Task 2.4 if launched with ./read-write-sem
+   * @return void* 
+   */
   void *reader()
   {
     while (rcount < NREAD)
@@ -158,6 +188,10 @@ void read_database(void)
 
   // Test and set
   #if DOPTIM == 1
+    /**
+     * @brief Test and set lock
+     * Task 2.1
+     */
     void lock()
     {
       while (verrou == 1);
@@ -171,6 +205,10 @@ void read_database(void)
 
   // Test and test and set
   #else
+    /**
+     * @brief Test and test and set lock
+     * Task 2.3
+     */
     void lock()
     {
       while (verrou == 1)
@@ -186,6 +224,10 @@ void read_database(void)
     }
   #endif
 
+  /**
+   * @brief Simple unlock
+   * 
+   */
   void unlock()
   {
     asm("movl $0, %%eax;"
@@ -196,6 +238,12 @@ void read_database(void)
     );
   }
 
+  /**
+   * @brief Write in database
+   * Act as Task 2.1 if launched with ./read-write-test-and-set
+   * Act as Task 2.3 if launched with ./read-write-test-and-test-and-set
+   * @return void* 
+   */
   void *writer()
   {
     while (wcount < NWRITE)
@@ -211,6 +259,12 @@ void read_database(void)
     return EXIT_SUCCESS;
   }
 
+  /**
+   * @brief Read in database
+   * Act as Task 2.1 if launched with ./read-write-test-and-set
+   * Act as Task 2.3 if launched with ./read-write-test-and-test-and-set
+   * @return void* 
+   */
   void *reader()
   {
     while (rcount < NREAD)
@@ -229,6 +283,7 @@ void read_database(void)
 
 int main(int argc, char **argv)
 {
+  // Args handling
   int opt;
   int nbthreadsReader;
   int nbthreadsWriter;
@@ -279,4 +334,12 @@ int main(int argc, char **argv)
     if (err != 0)
       perror("pthread_join");
   }
+
+  // Freeing resources
+  sem_destroy(&rsem);
+  sem_destroy(&wsem);
+  pthread_mutex_destroy(&mutex_readcount);
+  pthread_mutex_destroy(&mutex_writecount);
+
+  return EXIT_SUCCESS;
 }

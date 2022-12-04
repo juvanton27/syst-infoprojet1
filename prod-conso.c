@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <semaphore.h>
-#include <stdint.h>
 
 #define SIZE 8
 #define MAX_INT 128
@@ -23,12 +22,22 @@ int *buffer;
 int pos = 0; // position to add items in buffer
 int countprod = 0;
 
+/**
+ * @brief Create a random item
+ * 
+ * @return the produced item
+ */
 int produce_item()
 {
   countprod++;
   return (rand() % (MAX_INT - MIN_INT + 1)) + MIN_INT;
 }
 
+/**
+ * @brief Insert the produced item in the buffer
+ * Also increase pos
+ * @param item the item to add
+ */
 void insert_item(int item)
 {
   buffer[pos++] = item;
@@ -36,6 +45,10 @@ void insert_item(int item)
   for (int i = 0; i < 10000; i++);
 }
 
+/**
+ * @brief Remove the first item in the list
+ * Also decrease pos
+ */
 void remove_item()
 {
   for (int i = 1; i <= pos; i++)
@@ -55,18 +68,35 @@ void remove_item()
   int fullsize = 0;
   int emptysize = SIZE;
 
+  /**
+   * @brief My implementation of the sem_wait
+   * 
+   * @param sem a pointer to a sem int
+   */
   void my_wait(int *sem)
   {
     while(*sem <= 0);
     asm("movl %1, %%eax; decl %%eax; xchgl %%eax, %0;":"=r"(*sem):"r"(*sem):"%eax");
   }
 
+  /**
+   * @brief My implementation of the sem_post
+   * 
+   * @param sem a pointer to a sem int
+   */
   void my_post(int *sem)
   {
     while(*sem >= SIZE-1);
     asm("movl %1, %%ebx; incl %%ebx; xchgl %%ebx, %0;":"=r"(*sem):"r"(*sem):"%ebx");
   }
 
+  /**
+   * @brief Produce an item and add it to the buffer
+   * Act as Task 1.2 if launched with ./prod-cons
+   * Act as Task 2.4 if launched with ./prod-cons-sem
+   * @param args 
+   * @return void* 
+   */
   void *producer(void *args)
   {
     int item;
@@ -98,6 +128,13 @@ void remove_item()
     return EXIT_SUCCESS;
   }
 
+  /**
+   * @brief Consume the first item of the buffer
+   * Act as Task 1.2 if launched with ./prod-cons
+   * Act as Task 2.4 if launched with ./prod-cons-sem
+   * @param args 
+   * @return void* 
+   */
   void *consumer(void *args)
   {
     while (countprod < NPROD)
@@ -133,6 +170,10 @@ void remove_item()
 
   // Test and set
   #if OPTIM == 1
+    /**
+     * @brief Test and set lock
+     * Task 2.1
+     */
     void lock()
     {
       while (verrou == 1);
@@ -144,6 +185,10 @@ void remove_item()
       );
     }
 
+    /**
+     * @brief Test and set unlock
+     * Task 2.1
+     */
     void unlock()
     {
       asm("movl $0, %%eax;"
@@ -153,8 +198,13 @@ void remove_item()
           :"%eax"
       );
     }
+
   // Test and test and set
   #else
+    /**
+     * @brief Test and test and set lock
+     * Task 2.3
+     */
     void lock()
     {
       while (verrou == 1)
@@ -169,6 +219,10 @@ void remove_item()
       );
     }
 
+    /**
+     * @brief Test and test and set unlock
+     * Task 2.3
+     */
     void unlock()
     {
       asm("movl $0, %%eax;"
@@ -180,6 +234,13 @@ void remove_item()
     }
   #endif
 
+  /**
+   * @brief Produce an item and add it to the buffer
+   * Act as Task 2.1 if launched with ./prod-cons-test-and-set
+   * Act as Task 2.3 if launched with ./prod-cons-test-and-test-and-set
+   * @param args 
+   * @return void* 
+   */
   void *producer(void *args)
   {
     int item;
@@ -203,6 +264,13 @@ void remove_item()
     return EXIT_SUCCESS;
   }
 
+  /**
+   * @brief Consume the first item of the buffer
+   * Act as Task 2.1 if launched with ./prod-cons-test-and-set
+   * Act as Task 2.3 if launched with ./prod-cons-test-and-test-and-set
+   * @param args 
+   * @return void* 
+   */
   void *consumer(void *args)
   {
     while (countprod < NPROD)
@@ -225,10 +293,10 @@ void remove_item()
 
 int main(int argc, char **argv)
 {
+  // Args handling
   int opt;
   int nthreadsProd;
   int nthreadsConso;
-
   while ((opt = getopt(argc, argv, "p:c:")) != -1)
   {
     switch (opt)
@@ -281,8 +349,11 @@ int main(int argc, char **argv)
       perror("Failed to join thread");
   }
 
+  // Freeing resources
   sem_destroy(&empty);
   sem_destroy(&full);
   pthread_mutex_destroy(&mutex);
+  free(buffer);
+
   return EXIT_SUCCESS;
 }
