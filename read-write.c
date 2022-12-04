@@ -5,11 +5,11 @@
 #include <semaphore.h>
 
 #if DOPTIM == 0
-#define NREAD 2560
-#define NWRITE 640
+  #define NREAD 2560
+  #define NWRITE 640
 #else
-#define NREAD 6400
-#define NWRITE 6400
+  #define NREAD 6400
+  #define NWRITE 6400
 #endif
 
 sem_t wsem;
@@ -20,200 +20,164 @@ int wcount = 0; // nombre de write effectués
 void write_database(void)
 {
   wcount++;
-  for (int i = 0; i < 10000; i++)
-    ;
+  for (int i = 0; i < 10000; i++);
 }
 
 void read_database(void)
 {
   rcount++;
-  for (int i = 0; i < 10000; i++)
-    ;
+  for (int i = 0; i < 10000; i++);
 }
 
-// Code avec sémaphore
+/**
+ * @brief PARTIE 1
+ */
 #if OPTIM == 0
 
-pthread_mutex_t mutex_writecount;
-pthread_mutex_t mutex_readcount;
-int readcount = 0;  // nombre de readers
-int writecount = 0; // nombre de writers
+  pthread_mutex_t mutex_writecount;
+  pthread_mutex_t mutex_readcount;
+  int readcount = 0;  // nombre de readers
+  int writecount = 0; // nombre de writers
 
-void *writer()
-{
-  while (wcount < NWRITE)
+  void *writer()
   {
-    pthread_mutex_lock(&mutex_writecount);
-    // section critique - writecount
-    writecount++;
-    if (writecount == 1)
+    while (wcount < NWRITE)
     {
-      // premier writer arrive
-      sem_wait(&rsem);
-    }
-    pthread_mutex_unlock(&mutex_writecount);
+      pthread_mutex_lock(&mutex_writecount);
+      // section critique - writecount
+      writecount++;
+      if (writecount == 1)
+      {
+        // premier writer arrive
+        sem_wait(&rsem);
+      }
+      pthread_mutex_unlock(&mutex_writecount);
 
-    sem_wait(&wsem);
-    // section critique, un seul writer à la fois
-    write_database();
-    sem_post(&wsem);
-
-    pthread_mutex_lock(&mutex_writecount);
-    // section critique - writecount
-    writecount--;
-    if (writecount == 0)
-    {
-      // départ du premier writer
-      sem_post(&rsem);
-    }
-    pthread_mutex_unlock(&mutex_writecount);
-  }
-
-  return EXIT_SUCCESS;
-}
-
-void *reader()
-{
-  while (rcount < NREAD)
-  {
-    sem_wait(&rsem);
-    pthread_mutex_lock(&mutex_readcount);
-    // section critique
-    readcount++;
-    if (readcount == 1)
-    { // arrivée du premier reader
       sem_wait(&wsem);
-    }
-    pthread_mutex_unlock(&mutex_readcount);
-
-    sem_post(&rsem);
-    read_database();
-
-    pthread_mutex_lock(&mutex_readcount);
-    // section critique
-    readcount--;
-    if (readcount == 0)
-    { // départ du dernier reader
+      // section critique, un seul writer à la fois
+      write_database();
       sem_post(&wsem);
+
+      pthread_mutex_lock(&mutex_writecount);
+      // section critique - writecount
+      writecount--;
+      if (writecount == 0)
+      {
+        // départ du premier writer
+        sem_post(&rsem);
+      }
+      pthread_mutex_unlock(&mutex_writecount);
     }
-    pthread_mutex_unlock(&mutex_readcount);
+
+    return EXIT_SUCCESS;
   }
 
-  return EXIT_SUCCESS;
-}
-
-// Code avec test-and-set
-#elif DOPTIM == 1
-
-int verrou = 0;
-
-int lock()
-{
-  while (verrou == 1);
-  asm("movl $1, %%eax;"
-      "xchgl %%eax, %0;"
-      :"=r"(verrou)
-      :
-      :"%eax");
-}
-
-void unlock()
-{
-  asm("movl $0, %%eax;"
-      "xchgl %%eax, %0;"
-      :"=r"(verrou)
-      :
-      :"%eax");
-}
-
-void *writer()
-{
-  while (wcount < NWRITE)
+  void *reader()
   {
-    lock();
+    while (rcount < NREAD)
+    {
+      sem_wait(&rsem);
+      pthread_mutex_lock(&mutex_readcount);
+      // section critique
+      readcount++;
+      if (readcount == 1)
+      { // arrivée du premier reader
+        sem_wait(&wsem);
+      }
+      pthread_mutex_unlock(&mutex_readcount);
 
-    // critical section
-    write_database();
+      sem_post(&rsem);
+      read_database();
 
-    unlock();
+      pthread_mutex_lock(&mutex_readcount);
+      // section critique
+      readcount--;
+      if (readcount == 0)
+      { // départ du dernier reader
+        sem_post(&wsem);
+      }
+      pthread_mutex_unlock(&mutex_readcount);
+    }
+
+    return EXIT_SUCCESS;
   }
 
-  return EXIT_SUCCESS;
-}
-
-void *reader()
-{
-  while (rcount < NREAD)
-  {
-    lock();
-
-    // critical section
-    read_database();
-
-    unlock();
-  }
-
-  return EXIT_SUCCESS;
-}
-
-// Code avec test-and-test-and-set
+/**
+ * @brief Partie 2
+ */
 #else
 
-int verrou = 0;
+  int verrou = 0;
 
-int lock()
-{
-  // TODO: transformer en assembleur
-  while (verrou == 1) {
-    while (verrou);
-  }
-  asm("movl $1, %%eax;"
-      "xchgl %%eax, %0;"
-      :"=r"(verrou)
-      :
-      :"%eax");
-}
+  /**
+   * Test and set
+   */
+  #if DOPTIM == 1
+    int lock()
+    {
+      while (verrou == 1);
+      asm("movl $1, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax");
+    }
+  /**
+   * Test and test and set
+   */
+  #else
+    int lock()
+    {
+      while (verrou == 1)
+      {
+        while(verrou);
+      }
+      asm("movl $1, %%eax;"
+          "xchgl %%eax, %0;"
+          :"=r"(verrou)
+          :
+          :"%eax");
+    }
+  #endif
 
-void unlock()
-{
-  // TODO: transformer en assembleur
-  asm("movl $0, %%eax;"
-      "xchgl %%eax, %0;"
-      :"=r"(verrou)
-      :
-      :"%eax");
-}
-
-void *writer()
-{
-  while (wcount < NWRITE)
+  void unlock()
   {
-    lock();
-
-    // critical section
-    write_database();
-
-    unlock();
+    asm("movl $0, %%eax;"
+        "xchgl %%eax, %0;"
+        :"=r"(verrou)
+        :
+        :"%eax");
   }
 
-  return EXIT_SUCCESS;
-}
-
-void *reader()
-{
-  while (rcount < NREAD)
+  void *writer()
   {
-    lock();
+    while (wcount < NWRITE)
+    {
+      lock();
 
-    // critical section
-    read_database();
+      // critical section
+      write_database();
 
-    unlock();
+      unlock();
+    }
+
+    return EXIT_SUCCESS;
   }
 
-  return EXIT_SUCCESS;
-}
+  void *reader()
+  {
+    while (rcount < NREAD)
+    {
+      lock();
 
+      // critical section
+      read_database();
+
+      unlock();
+    }
+
+    return EXIT_SUCCESS;
+  }
 #endif
 
 int main(int argc, char **argv)
