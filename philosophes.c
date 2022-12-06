@@ -13,7 +13,9 @@ pthread_t phil[];
 pthread_mutex_t baguette[];
 int philosopher_ids[];
 
-int *verrou;
+#if OPTIM != 0
+  int * verrou;
+#endif
 
 /**
  * @brief Do nothing
@@ -70,12 +72,12 @@ void mange(int id) {}
      */
     void lock(int side)
     {
-      while (verrou[side] == 1);
-      asm("movl $1, %%eax;"
-          "xchgl %%eax, %0;"
-          : "=r"(verrou[side])
-          :
-          : "%eax");
+      // while (verrou[side] == 1);
+      // asm("movl $1, %%eax;"
+      //     "xchgl %%eax, %0;"
+      //     : "=r"(verrou[side])
+      //     :
+      //     : "%eax");
     }
 
     /**
@@ -85,11 +87,11 @@ void mange(int id) {}
      */
     void unlock(int side)
     {
-      asm("movl $0, %%eax;"
-          "xchgl %%eax, %0;"
-          : "=r"(verrou[side])
-          :
-          : "%eax");
+      // asm("movl $0, %%eax;"
+      //     "xchgl %%eax, %0;"
+      //     : "=r"(verrou[side])
+      //     :
+      //     : "%eax");
     }
 
   // Test and test and set
@@ -101,15 +103,15 @@ void mange(int id) {}
      */
     void lock(int side)
     {
-      while (verrou[side] == 1)
-      {
-        while (verrou[side]);
-      }
-      asm("movl $1, %%eax;"
-          "xchgl %%eax, %0;"
-          : "=r"(verrou[side])
-          :
-          : "%eax");
+      // while (verrou[side] == 1)
+      // {
+      //   while (verrou[side]);
+      // }
+      // asm("movl $1, %%eax;"
+      //     "xchgl %%eax, %0;"
+      //     : "=r"(verrou[side])
+      //     :
+      //     : "%eax");
     }
 
     /**
@@ -119,11 +121,11 @@ void mange(int id) {}
      */
     void unlock(int side)
     {
-      asm("movl $0, %%eax;"
-          "xchgl %%eax, %0;"
-          : "=r"(verrou[side])
-          :
-          : "%eax");
+      // asm("movl $0, %%eax;"
+      //     "xchgl %%eax, %0;"
+      //     : "=r"(verrou[side])
+      //     :
+      //     : "%eax");
     }
   #endif
 
@@ -187,17 +189,18 @@ int main(int argc, char **argv)
   pthread_mutex_t baguette[nthreads];
   int philosopher_ids[nthreads];
 
-  verrou = malloc(nthreads * sizeof(int));
-  for (size_t i = 0; i < nthreads; i++)
-  {
-    verrou[i] = 0;
-  }
+  #if OPTIM != 0
+    verrou = (int *) malloc(nthreads * sizeof(int));
+  #endif
 
   // Initialize the mutexes and philosopher IDs
   for (int i = 0; i < nthreads; i++)
   {
     pthread_mutex_init(&baguette[i], NULL);
     philosopher_ids[i] = i;
+    #if OPTIM != 0
+      verrou[i] = 0;
+    #endif
   }
 
   // Creating threads
@@ -207,7 +210,9 @@ int main(int argc, char **argv)
   for (int i = 0; i < nthreads; i++)
     pthread_join(phil[i], NULL);
 
-  free(verrou);
+  #if OPTIM != 0
+    free(verrou);
+  #endif
 
   return EXIT_SUCCESS;
 }

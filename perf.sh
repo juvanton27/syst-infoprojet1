@@ -31,7 +31,7 @@ for i in 1 8 16 32 64; do
 				timeval=`/usr/bin/time -f %e ./$1 -p $i -c $i 2>&1`
 			fi
 		fi
-		if [ $1 = "philosophes-test-and-set" ] || [ $1 = "philosophes-test-and-test-and-set" ] || [ $1 = "philosophes-sem" ]; then
+		if [ $1 = "philosophes-test-and-set" ] || [ $1 = "philosophes-test-and-test-and-set" ]; then
 			if [ $i = 32 ] || [ $i = 64 ]; then
 				timeval=`/usr/bin/time -f %e ./$1 -j $i -n 4 2>&1`
 			fi
