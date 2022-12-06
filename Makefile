@@ -11,7 +11,7 @@
 # 2.1 *-test-and-set
 # 2.2 perf.sh
 # 2.3 *-test-and-test-and-set
-# 2.4 
+# 2.4 *-sem
 #####################################
 
 CC=gcc
@@ -20,7 +20,7 @@ CCFLAGS= -std=gnu99 -pthread
 simple=philosophes read-write prod-conso
 test-and-set=philosophes-test-and-set read-write-test-and-set prod-conso-test-and-set
 test-and-test-and-set=philosophes-test-and-test-and-set read-write-test-and-test-and-set prod-conso-test-and-test-and-set
-semaphores=philosophes-sem read-write-sem prod-conso-sem
+semaphores=read-write-sem prod-conso-sem
 files=$(simple) $(test-and-set) $(test-and-test-and-set) $(semaphores) perso
 
 all : $(files)
@@ -43,12 +43,6 @@ philosophes-test-and-test-and-set : philosophes-test-and-test-and-set.o
 
 philosophes-test-and-test-and-set.o: philosophes.c 
 	$(CC) -DOPTIM=2 $(CCFLAGS) -c philosophes.c -o philosophes-test-and-test-and-set.o
-
-philosophes-sem : philosophes-sem.o
-	$(CC) $(CCFLAGS) -o philosophes-sem philosophes-sem.o
-
-philosophes-sem.o: philosophes.c 
-	$(CC) -DOPTIM=3 $(CCFLAGS) -c philosophes.c -o philosophes-sem.o
 
 # PROD-CONSO
 prod-conso : prod-conso.o 
@@ -102,7 +96,7 @@ read-write-sem.o: read-write.c
 
 # PERSONAL DEV (DELETE ON SUBMITION)
 perso: 
-	cp /mnt/shared/Bac\ 1/Systèmes\ informatiques/Projet/syst-infoprojet1/* /home/juvanton/Documents
+	cp /mnt/shared/Bac\ 1/Systèmes\ informatiques/Projet/syst-infoprojet1/* /home/juvanton/Documents/syst-infoprojet1
 	clear
 
 # CLEAN

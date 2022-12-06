@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 filename = input("Enter filename ('q' to quit) : ")
 while filename != 'q':
 
-  df = pd.read_csv(f'{filename}.csv', index_col=0)
+  df = pd.read_csv(f'data/{filename}.csv', index_col=0)
   mean = df.mean(axis=1)
   std = df.std(axis=1)
 
@@ -16,6 +16,7 @@ while filename != 'q':
   plt.xlabel('Nombre de threads')
   plt.title(f'Test de performance de "{filename}.c"')
 
+  plt.savefig(f'images/{filename}.png')
   plt.show()
 
   filename = input("Enter filename ('q' to quit) : ")
